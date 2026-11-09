@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>LEGO Backhoe Controller · ESP32-CAM Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./CSS/style.css">
+</head>
+<body>
+    <div class="background-effects" aria-hidden="true">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <aside id="toastNotification" class="toast-notification" role="status" aria-live="polite">
+        <div class="toast-icon" id="toastIcon">
+            <svg id="toastSvgSuccess" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <svg id="toastSvgDisconnect" class="hidden-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </div>
+        <div class="toast-content">
+            <span class="toast-title" id="toastTitle">SYSTEM LINKED</span>
+            <span class="toast-desc" id="toastDesc">Arduino Serial Port Connected Successfully</span>
+        </div>
+    </aside>
+
+    <div class="app-container">
+        <header class="app-header">
+            <div class="brand">
+                <div class="logo-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>LEGO BACKHOE</h1>
+                    <span class="subtitle">DUAL ARM CONTROL SYSTEM</span>
+                </div>
+            </div>
+
+            <div class="connection-card">
+                <div class="header-action-group">
+                    <div class="theme-picker-widget" aria-label="Theme Accent Selector">
+                        <span class="theme-label">THEME</span>
+                        <div class="theme-swatches">
+                            <button class="swatch-btn purple active" data-theme="purple" title="Cyber Purple" type="button"></button>
+                            <button class="swatch-btn cyan" data-theme="cyan" title="Neon Cyan" type="button"></button>
+                            <button class="swatch-btn green" data-theme="green" title="Matrix Green" type="button"></button>
+                            <button class="swatch-btn amber" data-theme="amber" title="Amber Gold" type="button"></button>
+                        </div>
+                    </div>
+
+                    <div class="header-telemetry-widget" aria-label="Session Timer">
+                        <span class="telemetry-label">SESSION TIME</span>
+                        <span class="telemetry-val" id="sessionTimer">00:00:00</span>
+                    </div>
+
+                    <button class="header-estop-btn" id="eStopBtn" disabled aria-label="Emergency Stop" type="button">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                        </svg>
+                        <span>E-STOP</span>
+                    </button>
+
+                    <button id="connectBtn" class="connect-btn" type="button">
+                        <span class="btn-text" id="connectBtnText">CONNECT ARDUINO</span>
+                    </button>
+                </div>
+                <div id="statusText" class="status-badge disconnected" role="status">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span class="status-label">NOT CONNECTED</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <nav class="sidebar-panel" id="sidebar" aria-label="Joint Selection Menu">
+                <div class="panel-header">
+                    <h2>JOINTS</h2>
+                    <span class="key-hint">KEYS [1 - 5]</span>
+                </div>
+                
+                <div class="joint-selector-list" role="tablist">
+                    <button class="joint-btn active" data-joint="1" role="tab" aria-selected="true" type="button">
+                        <div class="joint-badge" aria-hidden="true">01</div>
+                        <div class="joint-info">
+                            <span class="joint-title">DUAL ARM</span>
+                            <span class="joint-sub">Servo 1 & 3</span>
+                        </div>
+                        <div class="joint-arrow" aria-hidden="true">➔</div>
+                    </button>
+
+                    <button class="joint-btn" data-joint="2" role="tab" aria-selected="false" type="button">
+                        <div class="joint-badge" aria-hidden="true">02</div>
+                        <div class="joint-info">
+                            <span class="joint-title">BOOM</span>
+                            <span class="joint-sub">Servo 2</span>
+                        </div>
+                        <div class="joint-arrow" aria-hidden="true">➔</div>
+                    </button>
+
+                    <button class="joint-btn" data-joint="4" role="tab" aria-selected="false" type="button">
+                        <div class="joint-badge" aria-hidden="true">03</div>
+                        <div class="joint-info">
+                            <span class="joint-title">SWING</span>
+                            <span class="joint-sub">Servo 4</span>
+                        </div>
+                        <div class="joint-arrow" aria-hidden="true">➔</div>
+                    </button>
+
+                    <button class="joint-btn" data-joint="5" role="tab" aria-selected="false" type="button">
+                        <div class="joint-badge" aria-hidden="true">04</div>
+                        <div class="joint-info">
+                            <span class="joint-title">BASE 360</span>
+                            <span class="joint-sub">Servo 5</span>
+                        </div>
+                        <div class="joint-arrow" aria-hidden="true">➔</div>
+                    </button>
+
+                    <button class="joint-btn" data-joint="6" role="tab" aria-selected="false" type="button">
+                        <div class="joint-badge" aria-hidden="true">05</div>
+                        <div class="joint-info">
+                            <span class="joint-title">DRIVE</span>
+                            <span class="joint-sub">DC Motor</span>
+                        </div>
+                        <div class="joint-arrow" aria-hidden="true">➔</div>
+                    </button>
+                </div>
+
+                <div class="keyboard-legend" aria-label="Keyboard Controls Legend">
+                    <div class="legend-header">
+                        <span class="legend-title">KEYBOARD CONTROLS</span>
+                        <span class="legend-badge">HUD SHORTCUTS</span>
+                    </div>
+
+                    <div class="shortcut-grid">
+                        <div class="shortcut-card">
+                            <div class="key-combo">
+                                <kbd class="key">W</kbd>
+                                <span class="key-sep">/</span>
+                                <kbd class="key">S</kbd>
+                            </div>
+                            <div class="shortcut-label">
+                                <span class="action-name">Move Up / Down</span>
+                                <span class="action-sub">Actuator Drive</span>
+                            </div>
+                        </div>
+
+                        <div class="shortcut-card">
+                            <div class="key-combo">
+                                <kbd class="key">A</kbd>
+                                <span class="key-sep">/</span>
+                                <kbd class="key">D</kbd>
+                            </div>
+                            <div class="shortcut-label">
+                                <span class="action-name">Throttle Adjust</span>
+                                <span class="action-sub">-5% / +5% Speed</span>
+                            </div>
+                        </div>
+
+                        <div class="shortcut-card">
+                            <div class="key-combo">
+                                <kbd class="key">1</kbd>
+                                <span class="key-dash">-</span>
+                                <kbd class="key">5</kbd>
+                            </div>
+                            <div class="shortcut-label">
+                                <span class="action-name">Select Joint</span>
+                                <span class="action-sub">Servos & Motors</span>
+                            </div>
+                        </div>
+
+                        <div class="shortcut-card estop-card">
+                            <div class="key-combo">
+                                <kbd class="key key-wide">SPACE</kbd>
+                            </div>
+                            <div class="shortcut-label">
+                                <span class="action-name alert-text">EMERGENCY STOP</span>
+                                <span class="action-sub">Kill Motor Power</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <main class="controller-panel">
+                <section class="camera-card" aria-label="Camera Feed Section">
+                    <div class="camera-header">
+                        <div class="cam-status-pill">
+                            <span class="cam-live-dot" id="camLiveDot" aria-hidden="true"></span>
+                            <span class="hud-label" id="camStatusLabel">ESP32-CAM FEED</span>
+                        </div>
+                        <div class="cam-input-inline">
+                            <input type="text" id="camIpInput" class="cam-ip-input" placeholder="192.168.1.100:81/stream" value="192.168.1.100:81/stream" aria-label="Camera Stream IP Address" />
+                            <button id="camToggleBtn" class="cam-toggle-btn" type="button">START FEED</button>
+                        </div>
+                    </div>
+                    <div class="camera-viewport">
+                        <img id="camStream" class="cam-feed-img hidden" alt="ESP32 Live Camera Stream" />
+                        <div id="camPlaceholder" class="cam-placeholder">
+                            <div class="cam-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                    <circle cx="12" cy="13" r="4"></circle>
+                                </svg>
+                            </div>
+                            <span class="cam-offline-text">CAMERA OFFLINE - ENTER IP & START</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="hud-display" aria-label="Telemetry HUD">
+                    <div class="hud-top-bar">
+                        <span class="hud-label">CURRENT JOINT TELEMETRY</span>
+                        <div class="hud-status-leds">
+                            <div id="ledUp" class="hud-led led-up">
+                                <span class="led-dot" aria-hidden="true"></span> UP
+                            </div>
+                            <div id="ledDown" class="hud-led led-down">
+                                <span class="led-dot" aria-hidden="true"></span> DOWN
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hud-main">
+                        <div class="display-text" id="displayText">DUAL ARM</div>
+                        <div class="servo-indicator" id="servoIndicator">ACTIVE · SERVO 1 & 3 (MAX)</div>
+                    </div>
+                </section>
+
+                <section class="speed-selector-card" id="speedCard" aria-label="Throttle Selector">
+                    <div class="speed-header-row">
+                        <span class="speed-label">THROTTLE / SPEED METER (KEYS: A / D)</span>
+                        <span class="speed-value-display" id="speedValueDisplay"><span id="speedNum">50</span>%</span>
+                    </div>
+                    <div class="speed-slider-wrapper">
+                        <input type="range" id="speedRange" class="cyber-range" min="1" max="100" value="50" step="1" aria-label="Throttle Speed Percentage">
+                        <div class="speed-scale">
+                            <span>1% (PRECISION)</span>
+                            <span>50% (NORMAL)</span>
+                            <span>100% (TURBO)</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="control-actions" aria-label="Actuator Controls">
+                    <button class="ctrl-btn btn-up" id="upBtn" disabled aria-label="Move Joint Up" type="button">
+                        <div class="btn-glow" aria-hidden="true"></div>
+                        <div class="btn-content">
+                            <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="18 15 12 9 6 15"></polyline>
+                            </svg>
+                            <span class="btn-label">UP</span>
+                        </div>
+                    </button>
+
+                    <button class="ctrl-btn btn-down" id="downBtn" disabled aria-label="Move Joint Down" type="button">
+                        <div class="btn-glow" aria-hidden="true"></div>
+                        <div class="btn-content">
+                            <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                            <span class="btn-label">DOWN</span>
+                        </div>
+                    </button>
+                </section>
+            </main>
+        </div>
+    </div>
+
+   <script src="./JS/script.js"></script>
+</body>
+</html>
